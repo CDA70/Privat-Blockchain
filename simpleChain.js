@@ -58,7 +58,7 @@ class Blockchain{
 
         if (height > -1) {
           let previousBlock = await this.getBlock(height);
-          newBlock.previousBlock = previousBlock.hash;
+          newBlock.previousBlockHash = previousBlock.hash;
         }
         this.addDataToLevelDB(newBlock.height, JSON.stringify(newBlock))
 
@@ -182,3 +182,5 @@ let blockchain = new Blockchain()
 
 
 
+
+  
