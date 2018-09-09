@@ -158,7 +158,7 @@ Read the entire datastream and increment 1 to the blockHeigth
 
     + ``` blockchain.showAllBlocks()```
 
-![Node and Load command](./images/result.png)
+![Node and Load command](./images/resultAttributeChange.png)
 
 
 
