@@ -70,7 +70,7 @@ class Blockchain{
     }
     
     
-    async validateBlock(blockHeight){
+    validateBlock(blockHeight){
         return new Promise((resolve, reject) => {
             this.getBlock(blockHeight).then((block) => {
                 // get block hash
