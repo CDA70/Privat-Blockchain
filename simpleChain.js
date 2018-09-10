@@ -188,7 +188,7 @@ let blockchain = new Blockchain()
             i++;
             if (i < 10) theLoop(i);
         });
-    }, 1000);
+    }, 10000);
   })(0);
   
 
