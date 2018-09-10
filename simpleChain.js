@@ -53,13 +53,14 @@ class Blockchain{
         let height = parseInt(await this.getBlockHeight())
 
         newBlock.time = new Date().getTime().toString().slice(0, -3);
-        newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
+        
         newBlock.height = height + 1//this.blockHeight+1;
 
         if (height > -1) {
           let previousBlock = await this.getBlock(height);
           newBlock.previousBlockHash = previousBlock.hash;
         }
+        newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
         this.addDataToLevelDB(newBlock.height, JSON.stringify(newBlock))
 
     }
@@ -68,10 +69,10 @@ class Blockchain{
         return JSON.parse(await this.getLevelDBData(blockHeight))
     }
     
-
-    validateBlock(blockHeight){
+    
+    async validateBlock(blockHeight){
         return new Promise((resolve, reject) => {
-            this.getBlockHeight(blockHeight).then((block) => {
+            this.getBlock(blockHeight).then((block) => {
                 // get block hash
                 let blockHash = block.hash;
                 // remove block hash to test block integrity
@@ -79,7 +80,10 @@ class Blockchain{
                 // generate block hash
                 let validBlockHash = SHA256(JSON.stringify(block)).toString();
                 // Compare
+                console.log("    block Hash      : " + blockHash);
+                console.log("    Valid block Hash: " + validBlockHash);
                 if (blockHash === validBlockHash) {
+                    console.log("Block #" + blockHeight + " is valid");
                     resolve(true);
                 } else {
                     console.log('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
@@ -93,22 +97,24 @@ class Blockchain{
     
     
      // Validate blockchain
-    validateChain(){
+    async validateChain(){
         let errorLog = [];
 
-        let height = this.getBlockHeight();
-
+        const height = await this.getBlockHeight();
+        
         for (var i = 0; i < height; i++) {
           
-          // validate block
-          if (!this.validateBlock(i)) errorLog.push(i);
+           // validate block
+           if (!this.validateBlock(i)) errorLog.push(i);
 
-          if ( i == height - 1) break;
-          // compare blocks hash link
-          let blockHash = this.getBlock(i).hash;
-          let previousHash = this.getBlock(i + 1).previousBlockHash;
-          if (blockHash !== previousHash) {
-            errorLog.push(i);
+           if ( i == height - 1) break;
+           // compare blocks hash link
+
+           let blockHash = await this.getBlock(i).hash;
+           let previousHash = await this.getBlock(i + 1).previousBlockHash;
+           
+           if (blockHash !== previousHash) {
+               errorLog.push(i);
           }
         }
         
@@ -119,7 +125,7 @@ class Blockchain{
             console.log('No errors detected');
         }
     }
-      
+   
 
     /* ===== level DB  ================================
     |   persistent data functions 		         	   |
@@ -182,11 +188,13 @@ let blockchain = new Blockchain()
             i++;
             if (i < 10) theLoop(i);
         });
-    }, 10000);
+    }, 1000);
   })(0);
   
 
-  blockchain.validateChain()
+  setTimeout(function() { 
+      blockchain.validateChain()
+  }, 10)
   */
 
 
