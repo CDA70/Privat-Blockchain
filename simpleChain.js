@@ -34,6 +34,7 @@ class Blockchain{
         this.blockHeight = -1;
         let _self = this;
         this.getBlockHeight().then(function (height) {
+            
             if (height === -1) {
                 _self.addBlock(new Block("First block in the chain - Genesis block"));
                 console.log('The Genesis block is created!');
@@ -50,11 +51,12 @@ class Blockchain{
 
     // addBlock
     async addBlock(newBlock){
+       
         let height = parseInt(await this.getBlockHeight())
 
         newBlock.time = new Date().getTime().toString().slice(0, -3);
         
-        newBlock.height = height + 1//this.blockHeight+1;
+        newBlock.height = height + 1;
 
         if (height > -1) {
           let previousBlock = await this.getBlock(height);
@@ -80,14 +82,14 @@ class Blockchain{
                 // generate block hash
                 let validBlockHash = SHA256(JSON.stringify(block)).toString();
                 // Compare
-                console.log("    block Hash      : " + blockHash);
-                console.log("    Valid block Hash: " + validBlockHash);
+                //console.log("    block Hash      : " + blockHash);
+                //console.log("    Valid block Hash: " + validBlockHash);
                 if (blockHash === validBlockHash) {
                     console.log("Block #" + blockHeight + " is valid");
                     resolve(true);
                 } else {
                     console.log('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
-                    reject(false);
+                    resolve(false);
                 }
             }).catch((err) => {
                 reject(err);
@@ -99,31 +101,35 @@ class Blockchain{
      // Validate blockchain
     async validateChain(){
         let errorLog = [];
+        let isBlockValid = false;
+        let previousHash = '';
 
         const height = await this.getBlockHeight();
         
-        for (var i = 0; i < height; i++) {
-          
-           // validate block
-           if (!this.validateBlock(i)) errorLog.push(i);
+        for (let i = 0; i < height+1; i++) {
+            this.getBlock(i).then((block) => {
+                isBlockValid = this.validateBlock(block.height)
+                if (!isBlockValid) {
+                    errorLog.push(i);
+                }
+            
+                if (block.previousBlockHash != previousHash) {
+                    errorLog.push(i);
+                 }
+                previousHash = block.hash
 
-           if ( i == height - 1) break;
-           // compare blocks hash link
-
-           let blockHash = await this.getBlock(i).hash;
-           let previousHash = await this.getBlock(i + 1).previousBlockHash;
-           
-           if (blockHash !== previousHash) {
-               errorLog.push(i);
-          }
+                if ( i === (height-1)) {
+                    if (errorLog.length > 0) {
+                        console.log('Block errors = ' + errorLog.length);
+                        console.log('Blocks: ' + errorLog);
+                    } else {
+                        console.log('No errors detected');
+                    }
+                }
+            })
         }
         
-        if (errorLog.length > 0) {
-            console.log('Block errors = ' + errorLog.length);
-            console.log('Blocks: ' + errorLog);
-        } else {
-            console.log('No errors detected');
-        }
+        
     }
    
 
@@ -163,6 +169,7 @@ class Blockchain{
                     reject(error)
                 }
             })
+            console.log("block #" + key + " added the chain")
             resolve(value)
         })
     }
@@ -173,6 +180,13 @@ class Blockchain{
         }).on('error', function (error) {
             return console.log('unable to read data stream', error)
         });
+      }
+
+      corruptBlock(blockHeight){
+          this.getBlock(blockHeight).then((block) => {
+              block.body = "error";
+              this.addDataToLevelDB(blockHeight, JSON.stringify(block));
+          })
       }
 
 }
