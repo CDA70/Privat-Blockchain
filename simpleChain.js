@@ -34,6 +34,7 @@ class Blockchain{
         this.blockHeight = -1;
         let _self = this;
         this.getBlockHeight().then(function (height) {
+            
             if (height === -1) {
                 _self.addBlock(new Block("First block in the chain - Genesis block"));
                 console.log('The Genesis block is created!');
@@ -50,11 +51,12 @@ class Blockchain{
 
     // addBlock
     async addBlock(newBlock){
+       
         let height = parseInt(await this.getBlockHeight())
 
         newBlock.time = new Date().getTime().toString().slice(0, -3);
         
-        newBlock.height = height + 1//this.blockHeight+1;
+        newBlock.height = height + 1;
 
         if (height > -1) {
           let previousBlock = await this.getBlock(height);
@@ -80,8 +82,8 @@ class Blockchain{
                 // generate block hash
                 let validBlockHash = SHA256(JSON.stringify(block)).toString();
                 // Compare
-                console.log("    block Hash      : " + blockHash);
-                console.log("    Valid block Hash: " + validBlockHash);
+                //console.log("    block Hash      : " + blockHash);
+                //console.log("    Valid block Hash: " + validBlockHash);
                 if (blockHash === validBlockHash) {
                     console.log("Block #" + blockHeight + " is valid");
                     resolve(true);
@@ -104,7 +106,7 @@ class Blockchain{
 
         const height = await this.getBlockHeight();
         
-        for (let i = 0; i < height; i++) {
+        for (let i = 0; i < height+1; i++) {
             this.getBlock(i).then((block) => {
                 isBlockValid = this.validateBlock(block.height)
                 if (!isBlockValid) {
@@ -148,8 +150,8 @@ class Blockchain{
     
     getBlockHeightFromLevelDB(){
         return new Promise((resolve, reject) => {
-            //initialize heigth at 0
-            let height = 0;
+            //initialize heigth at -1
+            let height = -1;
             db.createReadStream().on('data', (data) => {
                height = height + 1;
             }).on('error', (error) => {
@@ -167,6 +169,7 @@ class Blockchain{
                     reject(error)
                 }
             })
+            console.log("block #" + key + " added the chain")
             resolve(value)
         })
     }
