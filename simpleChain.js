@@ -87,7 +87,7 @@ class Blockchain{
                     resolve(true);
                 } else {
                     console.log('Block #'+blockHeight+' invalid hash:\n'+blockHash+'<>'+validBlockHash);
-                    reject(false);
+                    resolve(false);
                 }
             }).catch((err) => {
                 reject(err);
@@ -99,31 +99,35 @@ class Blockchain{
      // Validate blockchain
     async validateChain(){
         let errorLog = [];
+        let isBlockValid = false;
+        let previousHash = '';
 
         const height = await this.getBlockHeight();
         
-        for (var i = 0; i < height; i++) {
-          
-           // validate block
-           if (!this.validateBlock(i)) errorLog.push(i);
+        for (let i = 0; i < height; i++) {
+            this.getBlock(i).then((block) => {
+                isBlockValid = this.validateBlock(block.height)
+                if (!isBlockValid) {
+                    errorLog.push(i);
+                }
+            
+                if (block.previousBlockHash != previousHash) {
+                    errorLog.push(i);
+                 }
+                previousHash = block.hash
 
-           if ( i == height - 1) break;
-           // compare blocks hash link
-
-           let blockHash = await this.getBlock(i).hash;
-           let previousHash = await this.getBlock(i + 1).previousBlockHash;
-           
-           if (blockHash !== previousHash) {
-               errorLog.push(i);
-          }
+                if ( i === (height-1)) {
+                    if (errorLog.length > 0) {
+                        console.log('Block errors = ' + errorLog.length);
+                        console.log('Blocks: ' + errorLog);
+                    } else {
+                        console.log('No errors detected');
+                    }
+                }
+            })
         }
         
-        if (errorLog.length > 0) {
-            console.log('Block errors = ' + errorLog.length);
-            console.log('Blocks: ' + errorLog);
-        } else {
-            console.log('No errors detected');
-        }
+        
     }
    
 
@@ -144,8 +148,8 @@ class Blockchain{
     
     getBlockHeightFromLevelDB(){
         return new Promise((resolve, reject) => {
-            //initialize heigth at -1
-            let height = -1;
+            //initialize heigth at 0
+            let height = 0;
             db.createReadStream().on('data', (data) => {
                height = height + 1;
             }).on('error', (error) => {
@@ -173,6 +177,13 @@ class Blockchain{
         }).on('error', function (error) {
             return console.log('unable to read data stream', error)
         });
+      }
+
+      corruptBlock(blockHeight){
+          this.getBlock(blockHeight).then((block) => {
+              block.body = "error";
+              this.addDataToLevelDB(blockHeight, JSON.stringify(block));
+          })
       }
 
 }
